@@ -1,0 +1,114 @@
+/*
+ *  Copyright (c) 2018-2022, baomidou (63976799@qq.com).
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+package cn.dface.biz.lock.autoconfig;
+
+import cn.dface.biz.lock.*;
+import cn.dface.biz.lock.aop.Lock4jMethodInterceptor;
+import cn.dface.biz.lock.aop.LockAnnotationAdvisor;
+import cn.dface.biz.lock.aop.LockOpsInterceptor;
+import cn.dface.biz.lock.excutor.LocalLockExecutor;
+import cn.dface.biz.lock.excutor.LockExecutor;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Role;
+import org.springframework.core.Ordered;
+
+import java.util.List;
+
+/**
+ * 分布式锁自动配置器
+ *
+ * @author zengzhihong TaoYu
+ */
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+@Configuration(proxyBeanMethods = false)
+public class LockAutoConfiguration {
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @ConditionalOnMissingBean(MethodBasedExpressionEvaluator.class)
+    @Bean
+    public SpelMethodBasedExpressionEvaluator methodBasedExpressionEvaluator() {
+        return new SpelMethodBasedExpressionEvaluator();
+    }
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @Bean
+    public Lock4jProperties lock4jProperties() {
+        return new Lock4jProperties();
+    }
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @SuppressWarnings("rawtypes")
+    @Bean
+    @ConditionalOnMissingBean
+    public LockTemplate lockTemplate(List<LockExecutor> executors, Lock4jProperties properties) {
+        LockTemplate lockTemplate = new LockTemplate();
+        lockTemplate.setProperties(properties);
+        lockTemplate.setExecutors(executors);
+        return lockTemplate;
+    }
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @Bean
+    @ConditionalOnMissingBean
+    public LockKeyBuilder lockKeyBuilder(MethodBasedExpressionEvaluator methodBasedExpressionEvaluator) {
+        return new DefaultLockKeyBuilder(methodBasedExpressionEvaluator);
+    }
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @Primary
+    @Bean
+    @ConditionalOnMissingBean
+    public AbortLockFailureStrategy abortLockFailureStrategy(
+        MethodBasedExpressionEvaluator methodBasedExpressionEvaluator, Lock4jProperties lock4jProperties) {
+        AbortLockFailureStrategy strategy = new AbortLockFailureStrategy(methodBasedExpressionEvaluator);
+        strategy.setAllowedMakeNonExecutableExpressionsAsString(lock4jProperties.isAllowedMakeNonExecutableExpressionsAsString());
+        return strategy;
+    }
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @Bean
+    @ConditionalOnMissingBean
+    public DefaultLockFailureStrategy defaultLockFailureStrategy() {
+        return new DefaultLockFailureStrategy();
+    }
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @Bean
+    @ConditionalOnMissingBean(Lock4jMethodInterceptor.class)
+    public LockOpsInterceptor conditionalLockOpsInterceptor(
+            MethodBasedExpressionEvaluator methodBasedExpressionEvaluator,
+            Lock4jProperties lock4jProperties, LockTemplate lockTemplate) {
+        return new LockOpsInterceptor(methodBasedExpressionEvaluator, lockTemplate, lock4jProperties);
+    }
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @Bean
+    @ConditionalOnMissingBean
+    public LockAnnotationAdvisor lockAnnotationAdvisor(Lock4jMethodInterceptor lockInterceptor) {
+        return new LockAnnotationAdvisor(lockInterceptor, Ordered.HIGHEST_PRECEDENCE);
+    }
+
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    @Bean
+    public LocalLockExecutor localLockExecutor() {
+        return new LocalLockExecutor();
+    }
+}
