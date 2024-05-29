@@ -1,0 +1,14 @@
+spring:
+  redis:
+    host: 10.0.80.20
+    port: 31379
+    password: Dface1423
+  coordinate:
+    zookeeper:
+#      zk-servers: 127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183
+logging:
+  level:
+    cn.dface: debug
+lock4j:
+  acquire-timeout: 3000 #默认值，可不设置
+  expire: 30000 #默认值，可不设置

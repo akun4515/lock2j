@@ -10,6 +10,8 @@
     <version>1.0.0-SNAPSHOT</version>
     <modules>
         <module>lock2j-core</module>
+        <module>lock2j-redisson-spring-boot-starter</module>
+        <module>lock2j-test</module>
     </modules>
 
     <parent>

@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+cn.dface.biz.lock2j.autoconfigure.RedissonLockAutoConfiguration
